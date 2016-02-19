@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Configuration Service</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="./css/default.css">
+    <link rel="stylesheet" href="./css/twemoji-awesome.css">
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+name: opening
+
+# Configuration Service
+
+---
+
+layout: true
+class: topic-template
+
+# Configuration Service
+
+---
+
+layout: false
+class: center, middle
+
+# Project goal
+
+---
+
+layout: true
+class: topic-template
+
+# Configuration Service > Project goal
+
+---
+
+> Create an API accessible Service that provides that ability to retrieve and store configuration data.
+
+---
+
+layout: false
+class: center, middle
+
+# Project requirements
+
+---
+
+layout: true
+class: topic-template
+
+# Configuration Service > Project requirements 1/2
+
+---
+
+[zendesk.atlassian.net/wiki/display/ops/Configuration+Service](https://zendesk.atlassian.net/wiki/display/ops/Configuration+Service)
+
+* Service is API accessible
+* A Ruby library to interface with the API
+* Data storage technology must:
+  * Be abstracted out and not directly accessed
+  * Handle replication of data
+
+---
+
+layout: true
+class: topic-template
+
+# Configuration Service > Project requirements 2/2
+
+---
+
+* The API:
+  * Is well documented
+  * Requires an API token to use
+  * Supports namespacing / separation of data
+  * Supports API tokens:
+      * To be matched with namespaces
+      * That are read, write or read/write
+  * Writes data as key -> value pairs
+  * Returns data in JSON format
+
+---
+
+layout: false
+class: center, middle
+
+# Implementation
+
+---
+
+layout: true
+class: topic-template
+
+# Configuration Service > Implementation
+
+---
+
+<br/>
+* Ruby library
+* Command line tool (Rubygem)
+* A token is required for access
+* ACL's applied to restrict token access
+* Supports Hashicorp Consul & Hashicorp Vault
+* Consistent adapter interface
+
+---
+
+layout: false
+class: center, middle
+
+# Ruby library
+
+---
+
+layout: true
+class: topic-template
+
+# Configuration Service > Ruby library
+
+---
+
+#### Basic usage
+
+```ruby
+include Zendesk::ConfigurationService
+
+cs = Adapters::Consul.new(
+  address: "http://127.0.0.1:8500",
+  token:   "2701E633-9EB5-4E38-B190-0CC809CDFC64"
+)
+
+cs.read('people/credentials')
+=> {"username"=>"admin", "password"=>"woo-ahhh"}
+
+credentials = { username: "admin", password: "whoah" }
+cs.write('people/credentials', credentials)
+=> true
+
+cs.read('people/credentials')
+=> {"username"=>"admin", "password"=>"whoah"}
+```
+---
+
+#### Read/write outside of permitted space
+
+```ruby
+include Zendesk::ConfigurationService
+
+cs = Adapters::Consul.new(
+  address: "http://127.0.0.1:8500",
+  token:   "2701E633-9EB5-4E38-B190-0CC809CDFC64"
+)
+
+cs.read('embeddable/credentials')
+Zendesk::ConfigurationService::Exceptions::NotFound: Zendesk::ConfigurationService::Exceptions::NotFound - GET '/v1/kv/configuration/embeddable/credentials?index=' (Net::HTTPNotFound - Not Found)
+--snip--
+
+cs.write('embeddable/credentials', {})
+Zendesk::ConfigurationService::Exceptions::Forbidden: Zendesk::ConfigurationService::Exceptions::Forbidden - PUT '/v1/kv/configuration/embeddable/credentials?index=' (Net::HTTPForbidden - Forbidden)
+--snip--
+```
+
+---
+
+#### Service unavailable
+
+```ruby
+include Zendesk::ConfigurationService
+
+cs = Adapters::Consul.new(
+  address: "http://127.0.0.1:8500",
+  token:   "2701E633-9EB5-4E38-B190-0CC809CDFC64"
+)
+
+cs.read('people/credentials')
+Zendesk::ConfigurationService::Exceptions::Unavailable: Zendesk::ConfigurationService::Exceptions::Unavailable - /v1/kv/configuration/people/credentials?index= (Errno::ECONNREFUSED - Connection refused - connect(2) for "127.0.0.1" port 8500)
+
+cs.available?
+=> false
+
+cs.status
+=> {:available=>false}
+```
+
+---
+
+layout: false
+class: center, middle
+
+# Command Line Tool
+
+---
+
+layout: true
+class: topic-template
+
+# Configuration Service > Command Line Tool
+
+---
+
+### zendesk-configuration-service
+
+```shell
+$ zendesk-configuration-service --help
+
+Toggle(s)
+    --debug                      Enable debugging (default: false)
+    --warn                       Enable warnings (default: true)
+    --verbose                    Enable verbose (default: true)
+
+Option(s)
+    --config <value>             Configuration file path (default:  ["/etc/zendesk_configuration_service/config.yml", "config.yml"], required: true, current: ["/etc/zendesk_configuration_service/config.yml", "config.yml"])
+
+Subcommand(s)
+    status                       Show the status
+    get, read                    Read a configuration item
+    set, write                   Write a configuration item
+    del, delete, remove, rm      Delete a configuration item
+    watch                        Watch a key for changes
+    update-file                  Update a file from a key
+```
+
+---
+
+### config.yml
+
+```yaml
+---
+consul:
+  address: "http://127.0.0.1:8500"
+  token:   "2701E633-9EB5-4E38-B190-0CC809CDFC64"
+
+hashicorp_vault:
+  address: "http://127.0.0.1:8200"
+  token:   "105286C0-63E7-493E-924C-42AA04651F13"
+```
+
+---
+
+### Environment variable
+
+```shell
+$ echo $ZENDESK_CONFIGURATION_SERVICE_CLASS
+consul
+```
+
+---
+
+layout: false
+class: center, middle
+
+# Demo
+
+## update-file
+
+---
+
+layout: true
+class: topic-template
+
+# Configuration Service
+
+---
+
+layout: false
+class: center, middle
+
+## Thanks<i class="twa twa-grinning"></i>
+
+
+<!-- ------------------------------------------------------------------------------------------- -->
+
+    </textarea>
+    <script src="./js/remark-latest.min.js"></script>
+    <script>var slideshow = remark.create();</script>
+  </body>
+</html>
